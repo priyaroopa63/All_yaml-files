@@ -1,0 +1,30 @@
+{
+   "metrics":{
+      "metrics_collected":{
+         "mem":{
+            "measurement":[
+               "mem_used_percent"
+            ],
+            "metrics_collection_interval":60
+         },
+
+
+    "disk": {
+        "measurement": [
+              {"name": "free", "rename": "DISK_FREE", "unit": "Gigabytes"},
+              "total",
+              "used",
+              "used_percent"
+            ],
+        "metrics_collection_interval": 60,
+
+        "resources": [
+          "/"
+        ]
+      }
+      },
+      "append_dimensions": {
+        "InstanceId": "${aws:InstanceId}"
+      }
+   }
+}

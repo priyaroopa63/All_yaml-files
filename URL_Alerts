@@ -1,0 +1,48 @@
+import json
+
+import urllib3
+import boto3
+sns= boto3.client('sns')
+http = urllib3.PoolManager()
+urls = ['https://dev-contract.diabosapp.biz','https://dev-cms.diabosapp.biz','https://development-da-login.diabosapp.biz','https://dev-query.diabosapp.biz','https://dev-saweb.diabosapp.biz','https://development-da.diabosapp.biz','https://dev-elk.diabosapp.biz','https://grafana.diabosapp.biz',
+        'https://jasper-reports.diabosapp.biz','https://dev-bold-bi.diabosapp.biz','https://dev-api.diabosapp.biz','https://dev-cms-ds.diabosapp.biz','https://dev-swagger.diabosapp.biz','https://dev-cms-api.diabosapp.biz','https://uat-saweb.diabosapp.biz','https://uat-query.diabosapp.biz','https://uat-da-login.diabosapp.biz','https://uat-contract.diabosapp.biz',
+'https://uat-cms.diabosapp.biz','https://uat-da.diabosapp.biz','https://uat-elk.diabosapp.biz','https://uat-cms-ds.diabosapp.biz','https://uat-cms-api.diabosapp.biz','https://uat-swagger.diabosapp.biz','https://uat-api.diabosapp.biz',
+'https://qa-contract.diabosapp.biz','https://qa-cms.diabosapp.biz','https://qa-da-login.diabosapp.biz','https://qa-query.diabosapp.biz','https://qa-saweb.diabosapp.biz','https://qa-da.diabosapp.biz','https://qa-elk.diabosapp.biz','https://qa-cms-api.diabosapp.biz',
+'https://qa-api.diabosapp.biz','https://qa-cms-ds.diabosapp.biz','https://qa-swagger.diabosapp.biz','https://demo-da.diabosapp.biz','https://demo-da-login.diabosapp.biz','https://demo-da.diabosapp.biz','https://demo-query.diabosapp.biz','https://prod-elk.diabosapp.biz']
+
+topic_arn='arn:aws:sns:ap-south-1:884935716134:approvel-topic'
+#topic_arn='arn:aws:sns:ap-south-1:884935716134:merge-request-approval'
+def lambda_handler(event, context):
+    do_health_check()
+
+def do_health_check():
+    failures = list()
+    for url in urls:
+        try:
+            response = http.request('GET', url)
+            if response.status != 200:
+                error = dict()
+                temp=url.split('://')
+                error['url'] = '('+temp[0]+') '+temp[1]
+                error['status'] = response.status
+                error['response'] = response.data
+                failures.append(error)
+        except e:
+            error = dict()
+            temp=url.split('://')
+            error['url'] = '('+temp[0]+') '+temp[1]
+            error['status'] = 'xxx'
+            error['response'] = e
+            failures.append(error)
+            message = "Error occurred for url: " + error['url']+ ". Error: " + e
+            print(message)
+            
+    if len(failures) > 0:
+        message = "Health check failures in following. \n\n"
+        for failure in failures:
+            message += repr(failure) + '\n'
+        print('Sending message:'+ message)
+        # Publish to topic
+        sns.publish(TopicArn=topic_arn,
+                    Message=message,
+                    Subject="Health check failure for diabos UI ")

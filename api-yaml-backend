@@ -1,0 +1,84 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: deploymentdevapi
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: devapi
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: devapi
+    spec:
+      containers:
+      - image: 884935716134.dkr.ecr.ap-south-1.amazonaws.com/d3.0-api-dev:latest
+        imagePullPolicy: Always
+        name: devapi
+        ports:
+        - containerPort: 8290
+          name: http-call
+        resources:
+            requests:
+              cpu: 800m
+              memory: 3000Mi
+            limits:
+              cpu: 1200m
+              memory: 4000Mi
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /check/health
+            port: http-call
+          initialDelaySeconds: 30
+          timeoutSeconds: 15
+          periodSeconds: 30
+          successThreshold: 1
+            #readinessProbe:
+            #failureThreshold: 8
+            #httpGet:
+            #host: dev-api.diabosapp.biz
+            #path: /check/health
+            #port: 8290
+            #scheme: HTTP
+            #initialDelaySeconds: 15
+            #timeoutSeconds: 20
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: serviceapimodule
+spec:
+  type: ClusterIP
+  ports:
+  - port: 80
+    targetPort: 8290
+    protocol: TCP
+  selector:
+    app.kubernetes.io/name: devapi
+
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: hpa-apimodule
+  namespace: dev
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1beta1
+    kind: Deployment
+    name: deploymentdevapi
+  minReplicas: 1
+  maxReplicas: 2
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 80
+  - type: Resource
+    resource:
+      name: memory
+      targetAverageUtilization: 80

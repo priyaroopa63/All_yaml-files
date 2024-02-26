@@ -1,0 +1,61 @@
+version: 0.2
+
+phases:
+  install:
+    commands:
+      - yum install -y jq
+  pre_build:
+    commands:
+      - echo Logging in to Amazon ECR...
+      - aws --version
+     # - aws ecr get-login --region ap-south-1 --no-include-email
+      - aws ecr get-login-password --region ap-south-1 | docker login --username AWS --password-stdin 884935716134.dkr.ecr.ap-south-1.amazonaws.com
+      - REPOSITORY_URI=884935716134.dkr.ecr.ap-south-1.amazonaws.com/$Repository_Name-$Branch_Name
+      - rm -rf ./src/environments/environment.prod.ts
+      - rm -rf ./src/environments/environment.dev.ts
+      - rm -rf ./src/environments/environment.uat.ts
+      - rm -rf ./src/environments/environment.ts
+      - aws sts get-caller-identity 
+      - aws ssm get-parameter --region ap-south-1 --name "$Branch_Name-da-environment-ts" --with-decryption | jq -r '.Parameter.Value' > ./src/environments/environment.prod.ts
+      - aws ssm get-parameter --region ap-south-1 --name "$Branch_Name-da-environment-ts" --with-decryption | jq -r '.Parameter.Value' > ./src/environments/environment.ts
+      - aws ssm get-parameter --region ap-south-1 --name "$Branch_Name-da-environment-ts" --with-decryption | jq -r '.Parameter.Value' > ./src/environments/environment.dev.ts
+      - aws ssm get-parameter --region ap-south-1 --name "$Branch_Name-da-environment-ts" --with-decryption | jq -r '.Parameter.Value' > ./src/environments/environment.uat
+      - cat ./src/environments/environment.dev.ts
+      - cat ./src/environments/environment.ts
+      # - COMMIT_HASH=$(echo $CODEBUILD_RESOLVED_SOURCE_VERSION | cut -c 1-7) 
+      # - IMAGE_TAG=${COMMIT_HASH:=latest}
+  build:
+    commands:
+      - echo Build started on `date`
+      - echo Building the Docker image...
+      - echo "$Repository_Name"
+      - echo "$Branch_Name"
+      - docker build -t da-uat .
+      - docker tag da-uat 884935716134.dkr.ecr.ap-south-1.amazonaws.com/$Repository_Name-$Branch_Name:$CODEBUILD_BUILD_NUMBER
+      - docker tag da-uat 884935716134.dkr.ecr.ap-south-1.amazonaws.com/$Repository_Name-$Branch_Name:latest
+      # - docker tag ImageName:latest 884935716134.dkr.ecr.ap-south-1.amazonaws.com/ids-cms:latest 
+      # - docker tag ids-cms 884935716134.dkr.ecr.ap-south-1.amazonaws.com/ids-cms:$CODEBUILD_BUILD_NUMBER
+  post_build:
+    commands:
+      - echo Build completed on `date`
+      - echo "$Repository_Name-$Branch_Name"
+      - echo Pushing the Docker images...
+      # - docker push 884935716134.dkr.ecr.ap-south-1.amazonaws.com/ids-cms:latest
+      - docker push 884935716134.dkr.ecr.ap-south-1.amazonaws.com/$Repository_Name-$Branch_Name:$CODEBUILD_BUILD_NUMBER
+      - docker push 884935716134.dkr.ecr.ap-south-1.amazonaws.com/$Repository_Name-$Branch_Name:latest
+      - echo $EKS_KUBECTL_ROLE_ARN
+      - CREDENTIALS=$(aws sts assume-role --role-arn $EKS_KUBECTL_ROLE_ARN --role-session-name codebuild-kubectl --duration-seconds 900)
+      - echo $EKS_KUBECTL_ROLE_ARN
+      - export AWS_ACCESS_KEY_ID="$(echo ${CREDENTIALS} | jq -r '.Credentials.AccessKeyId')"
+      - export AWS_SECRET_ACCESS_KEY="$(echo ${CREDENTIALS} | jq -r '.Credentials.SecretAccessKey')"
+      - export AWS_SESSION_TOKEN="$(echo ${CREDENTIALS} | jq -r '.Credentials.SessionToken')"
+      - echo Writing image definitions file...
+      # - printf '{"ImageURI":"image_URI"}' > imageDetail.json
+      - echo "$Repository_Name-$Branch_Name"
+      - aws sts get-caller-identity 
+      - aws eks update-kubeconfig --region ap-south-1 --name Diabos30-uat-Eks-Cluster
+      - aws s3 ls s3://diabos-manifestfiles-non-prod/uat/da
+      - aws s3 cp s3://diabos-manifestfiles-non-prod/uat/da/uat_da_EKS.yaml .
+      - sed -i "s/latest/$CODEBUILD_BUILD_NUMBER/g" uat_da_EKS.yaml
+      - cat uat_da_EKS.yaml
+      - kubectl apply -f uat_da_EKS.yaml -n uat

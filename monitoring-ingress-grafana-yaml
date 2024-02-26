@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana-ingress
+  namespace: monitoring
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/load-balancer-name : grafana-alb-production-cluster
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:114524529325:certificate/13eeb819-691f-4915-934a-af99af411fa6
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}, {"HTTP": 80}]'
+    alb.ingress.kubernetes.io/subnets: subnet-01717896c45c93d4e, subnet-08b66fd6ad0a58c2c, subnet-0a61e1f5653579e33
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: grafanaproduction.diabosapp.biz
+      http:
+       paths:
+       - path:  /
+         pathType: Prefix
+         backend:
+          service:
+           name: grafana
+           port:
+             number: 3000

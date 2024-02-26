@@ -1,0 +1,19 @@
+import boto3
+import datetime
+
+def lambda_handler(event, context):
+    ec2_client = boto3.client('ec2')
+    instances = ['i-0004f0a4baa494d0c']  # List the instance IDs you want to create AMIs for
+    
+    current_time = datetime.datetime.now()
+    date_string = current_time.strftime('%Y-%m-%d')
+    
+    for instance_id in instances:
+        image_name = f'AMI for {instance_id} - {date_string}'
+        response = ec2_client.create_image(
+            InstanceId=instance_id,
+            Name=image_name,
+            Description='Daily AMI snapshot'
+        )
+        
+        print(f"Created AMI snapshot {response['ImageId']} for instance {instance_id}")

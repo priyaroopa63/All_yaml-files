@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elasticsearch-configmap
+  namespace: logging
+data:
+  PRODUCTION_ELASTICSEARCH_HOST: '10.0.1.44' --- elk instance private ip
+  PRODUCTION_ELASTICSEARCH_PORT: '9200'
+  PRODUCTION_ELASTICSEARCH_INDEX: 'app-production-test'

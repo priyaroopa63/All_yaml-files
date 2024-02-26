@@ -1,0 +1,16 @@
+# Build the query
+curl -XPOST -u 'elastic:cYiDo1nRVF1vE26' "$ELASTICSEARCH_HOST:$ELASTICSEARCH_PORT/$INDEX_PATTERN/_delete_by_query" -H "Content-Type: application/json" -d '
+{
+  "query": {
+    "range": {
+      "@timestamp": {
+        "lte": "now-30d"
+      }
+    }
+  }
+}'
+
+ 
+
+crontab -l
+0 06 * * * /home/bitnami/elk-delete-script.sh apps-production-* -------- crontab exrpression { this expression indicates that in 

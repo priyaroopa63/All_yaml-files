@@ -1,0 +1,98 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: production-ingress-frontend-alb
+  annotations:
+    kubernetes.io/ingress.class: alb
+    alb.ingress.kubernetes.io/load-balancer-name : ingress-production-frontend-alb
+    alb.ingress.kubernetes.io/certificate-arn: arn:aws:acm:ap-south-1:114524529325:certificate/13eeb819-691f-4915-934a-af99af411fa6
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+    alb.ingress.kubernetes.io/backend-protocol: HTTP
+    alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/subnets: subnet-01717896c45c93d4e, subnet-08b66fd6ad0a58c2c, subnet-0a61e1f5653579e33
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - host: contract.diabosapp.biz
+      http:
+       paths:
+       - path:  /
+         pathType: Prefix
+         backend:
+          service:
+           name: servicedacontractmodule
+           port:
+             number: 80
+    - host: cms.diabosapp.biz
+      http:
+       paths:
+       - path:  /
+         pathType: Prefix
+         backend:
+          service:
+           name: servicecmsmodule
+           port:
+             number: 80
+    - host: saweb.diabosapp.biz
+      http:
+       paths:
+       - path:  /
+         pathType: Prefix
+         backend:
+          service:
+           name: servicesaweb
+           port:
+             number: 8080
+    - host: query.diabosapp.biz
+      http:
+       paths:
+       - path:  /
+         pathType: Prefix
+         backend:
+          service:
+           name: servicedaquerymodule
+           port:
+             number: 80
+    - host: da.diabosapp.biz
+      http:
+       paths:
+       - path:  /
+         pathType: Prefix
+         backend:
+          service:
+           name: serviceda
+           port:
+             number: 80
+    - host: da-login.diabosapp.biz
+      http:
+       paths:
+       - path:  /
+         pathType: Prefix
+         backend:
+          service:
+           name: serviceloginmodule
+           port:
+             number: 8085
+    - host: appchat.diabosapp.biz
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: serviceinappchatsendbirdmodule
+              port:
+               number: 80
+    - host: api-websocket.diabosapp.biz
+      http:
+        paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: serviceapinotificationmodule
+              port:
+                number: 80
